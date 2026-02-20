@@ -2,315 +2,337 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>シンプル週次家計簿</title>
+  <title>週次家計簿</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 16px;
-      max-width: 720px;
-      margin-left: auto;
-      margin-right: auto;
-      background-color: #f5f5f5;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      padding: 32px 48px 48px 48px; /* 左右を広めに */
+      max-width: 680px;
+      margin: 0 auto;
     }
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 12px;
-    }
+
     h2 {
-      font-size: 1.1rem;
-      margin-top: 24px;
-      margin-bottom: 8px;
+      margin: 28px 0 12px 12px; /* 左にインデント */
+      font-size: 1.15rem;
     }
+
     .card {
       background: white;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      padding: 24px;          /* カード内も余裕を持たせる */
+      border-radius: 12px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     }
-    label {
-      display: block;
-      font-size: 0.85rem;
-      margin-bottom: 4px;
-    }
-    input[type="date"],
-    input[type="number"] {
+
+    input {
       width: 100%;
-      padding: 8px 10px;
-      margin-bottom: 10px;
-      font-size: 1rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      background-color: #fff;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 16px;
     }
+
     button {
-      padding: 9px 14px;
-      font-size: 0.95rem;
-      border-radius: 4px;
+      padding: 8px 14px;
       border: none;
+      border-radius: 6px;
       cursor: pointer;
-      background-color: #1976d2;
+      font-size: 14px;
+    }
+
+    .btn-main {
+      background: #1976d2;
       color: white;
     }
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
+
+    .btn-edit {
+      background: #616161;
+      color: white;
+      margin-right: 4px;
     }
-    .small {
-      font-size: 0.8rem;
-      color: #666;
+
+    .btn-del {
+      background: #c62828;
+      color: white;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
     }
-    th, td {
-      padding: 6px 4px;
+
+    th,
+    td {
+      padding: 10px 8px;
       border-bottom: 1px solid #eee;
       text-align: right;
-      white-space: nowrap;
     }
-    th:first-child, td:first-child {
+
+    th:first-child,
+    td:first-child {
       text-align: left;
     }
-    .highlight-week {
-      background-color: #e3f2fd;
-    }
-    .amount-positive {
-      color: #1b5e20;
-    }
+
     .amount-negative {
       color: #b71c1c;
     }
-    .flex-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
+
+    .amount-positive {
+      color: #1b5e20;
     }
-    .flex-row > div {
-      flex: 1;
+
+    /* トースト（ボタンの近く or 画面下中央） */
+    .toast {
+      position: absolute;
+      background: #333;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 999;
     }
-    @media (max-width: 480px) {
-      th, td {
-        font-size: 0.8rem;
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 24px 20px 32px 20px;
       }
-      button {
-        width: 100%;
+      h2 {
+        margin-left: 8px;
       }
     }
   </style>
 </head>
 <body>
-  <h1>シンプル週次家計簿</h1>
-
-  <!-- 週予算設定 -->
+  <h2>週予算</h2>
   <div class="card">
-    <h2>週の予算</h2>
     <form id="budget-form">
-      <div class="flex-row">
-        <div>
-          <label for="budget-input">週予算（円）</label>
-          <input type="number" id="budget-input" inputmode="decimal" />
-        </div>
-      </div>
-      <button type="submit">予算を保存</button>
-      <div class="small">
-        ※すべての週に共通の予算として扱う。<br>
-        ※支出ベースを想定（例：30000 と入力すると「週3万円まで使う」が基準）。
-      </div>
+      <input type="number" id="budget-input" placeholder="週予算（円）" />
+      <button class="btn-main">保存</button>
     </form>
   </div>
 
-  <!-- 入力 -->
+  <h2>入力</h2>
   <div class="card">
-    <h2>入力</h2>
     <form id="entry-form">
-      <div class="flex-row">
-        <div>
-          <label for="date-input">日付</label>
-          <input type="date" id="date-input" required />
-        </div>
-        <div>
-          <label for="amount-input">金額（円）</label>
-          <input type="number" id="amount-input" required inputmode="decimal" />
-        </div>
-      </div>
-      <button type="submit">登録</button>
-      <div class="small">
-        ※支出はマイナス（例: -3500）、収入はプラス（例: 20000）のように入力してもよい。
-      </div>
+      <input type="date" id="date-input" required />
+      <input type="number" id="amount-input" placeholder="金額（円）" required />
+      <button class="btn-main">登録</button>
     </form>
   </div>
 
-  <!-- 週ごとの集計＋予算進捗 -->
+  <h2>週ごとの集計</h2>
   <div class="card">
-    <h2>週ごとの合計と予算進捗（日曜〜土曜）</h2>
     <table id="weekly-table">
       <thead>
         <tr>
           <th>週</th>
-          <th>使った金額</th>
+          <th>合計</th>
           <th>予算</th>
           <th>残り</th>
           <th>使用率</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- JSで挿入 -->
-      </tbody>
+      <tbody></tbody>
     </table>
-    <div class="small">
-      ※色付きの行が「今週（日曜〜土曜）」である。<br>
-      ※「残り」は 予算 − 使った金額。マイナスは予算オーバー。<br>
-      ※「使用率」＝ 使った金額 ÷ 予算。予算が未設定または0以下の場合は「—」。
-    </div>
   </div>
 
-  <!-- 直近10日分の履歴 -->
+  <h2>直近10日</h2>
   <div class="card">
-    <h2>登録済み一覧（直近10日分）</h2>
     <table id="entry-table">
       <thead>
         <tr>
           <th>日付</th>
           <th>金額</th>
+          <th></th>
         </tr>
       </thead>
-      <tbody>
-        <!-- JSで挿入 -->
-      </tbody>
+      <tbody></tbody>
     </table>
-    <div class="small">
-      ※今日を含む直近10日間の入力のみ表示する。
-    </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = "simple_weekly_kakeibo_entries_v1";
-    const BUDGET_KEY = "simple_weekly_kakeibo_budget_v1";
+  <div id="toast" class="toast"></div>
 
-    function loadEntries() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      try {
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr)) return arr;
-        return [];
-      } catch (e) {
-        console.error("Failed to parse stored entries", e);
-        return [];
-      }
+  <script>
+    const STORAGE_KEY = "kakeibo_entries";
+    const BUDGET_KEY = "kakeibo_budget";
+    let editingId = null;
+
+    // YYYY-MM-DD → Date（ローカル正規化）
+    function parseDateStrict(str) {
+      const [y, m, d] = str.split("-").map(Number);
+      return new Date(y, m - 1, d);
     }
 
+    function showToast(message, button) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+
+      // 位置計算用に一旦 (0,0) にして show
+      toast.style.top = "0px";
+      toast.style.left = "0px";
+      toast.classList.add("show");
+
+      const toastWidth = toast.offsetWidth;
+      const toastHeight = toast.offsetHeight;
+
+      let top =
+        window.scrollY + window.innerHeight - 80 - toastHeight / 2;
+      let left =
+        window.scrollX + window.innerWidth / 2 - toastWidth / 2;
+
+      if (button) {
+        const rect = button.getBoundingClientRect();
+
+        // 基本はボタン右側
+        top =
+          window.scrollY +
+          rect.top +
+          rect.height / 2 -
+          toastHeight / 2;
+        left = window.scrollX + rect.right + 8;
+
+        // 右にはみ出すなら左側に回り込む
+        if (left + toastWidth + 8 > window.scrollX + window.innerWidth) {
+          left = window.scrollX + rect.left - toastWidth - 8;
+        }
+        // 上下にはみ出す場合は補正
+        if (top < window.scrollY + 10) top = window.scrollY + 10;
+        if (top + toastHeight > window.scrollY + window.innerHeight - 10) {
+          top = window.scrollY + window.innerHeight - toastHeight - 10;
+        }
+      }
+
+      toast.style.top = `${top}px`;
+      toast.style.left = `${left}px`;
+
+      setTimeout(() => toast.classList.remove("show"), 1200);
+    }
+
+    function loadEntries() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    }
     function saveEntries(entries) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     }
 
     function loadBudget() {
-      const raw = localStorage.getItem(BUDGET_KEY);
-      if (!raw) return 0;
-      const v = Number(raw);
-      if (!Number.isFinite(v)) return 0;
-      return v;
+      return Number(localStorage.getItem(BUDGET_KEY) || 0);
     }
-
     function saveBudget(budget) {
-      localStorage.setItem(BUDGET_KEY, String(budget));
+      localStorage.setItem(BUDGET_KEY, budget);
     }
 
-    function formatDateLabel(dateObj) {
-      const y = dateObj.getFullYear();
-      const m = (dateObj.getMonth() + 1).toString().padStart(2, "0");
-      const d = dateObj.getDate().toString().padStart(2, "0");
-      return `${y}/${m}/${d}`;
-    }
-
-    // 日付文字列 "YYYY-MM-DD" からローカルタイムのDateを作る
-    function parseDateFromInput(dateStr) {
-      const [y, m, d] = dateStr.split("-").map(Number);
-      return new Date(y, m - 1, d);
-    }
-
-    // その日が属する「日曜〜土曜」の週の開始日（Sunday）と終了日（Saturday）を返す
-    function getWeekRange(dateObj) {
-      const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-      const day = d.getDay(); // 0: Sunday, 6: Saturday
-      const sunday = new Date(d);
-      sunday.setDate(d.getDate() - day);
+    function getWeekRange(dateStr) {
+      const date = parseDateStrict(dateStr);
+      const day = date.getDay(); // 0=日
+      const sunday = new Date(date);
+      sunday.setDate(date.getDate() - day);
       const saturday = new Date(sunday);
       saturday.setDate(sunday.getDate() + 6);
       return { start: sunday, end: saturday };
     }
 
-    function getWeekKey(dateObj) {
-      const { start, end } = getWeekRange(dateObj);
-      const key = `${start.getFullYear()}-${(start.getMonth()+1).toString().padStart(2,"0")}-${start.getDate().toString().padStart(2,"0")}`;
-      const label = `${formatDateLabel(start)} 〜 ${formatDateLabel(end)}`;
-      return { key, label, start };
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
     }
 
-    function getThisWeekKey() {
-      return getWeekKey(new Date()).key;
-    }
-
-    // 直近10日分の閾値を返す（今日を含めて10日）
-    function getTenDaysAgo() {
-      const today = new Date();
-      const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      base.setDate(base.getDate() - 9); // 今日を含めて10日分
-      return base;
-    }
-
-    function sameDayOrAfter(d, threshold) {
-      return d.getTime() >= threshold.getTime();
-    }
-
-    function sameDayOrBefore(d, limit) {
-      return d.getTime() <= limit.getTime();
+    function render() {
+      const entries = loadEntries();
+      const budget = loadBudget();
+      renderEntries(entries);
+      renderWeekly(entries, budget);
     }
 
     function renderEntries(entries) {
       const tbody = document.querySelector("#entry-table tbody");
       tbody.innerHTML = "";
 
-      const sorted = [...entries].sort((a, b) => {
-        if (a.date === b.date) return a.id - b.id;
-        return a.date < b.date ? -1 : 1;
-      });
-
-      const formatter = new Intl.NumberFormat("ja-JP", {
-        style: "currency",
-        currency: "JPY"
-      });
-
       const today = new Date();
-      const todayBase = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const tenDaysAgo = getTenDaysAgo();
+      const todayBase = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate()
+      );
+
+      entries.sort((a, b) => a.date.localeCompare(b.date));
 
       let count = 0;
-      for (const e of sorted) {
-        const d = parseDateFromInput(e.date);
-        // 今日を含む直近10日だけ表示
-        if (!sameDayOrAfter(d, tenDaysAgo) || !sameDayOrBefore(d, todayBase)) {
-          continue;
-        }
+      for (const e of entries) {
+        const d = parseDateStrict(e.date);
+
+        // 日数差（今日を0として、0〜9日前だけ通す）
+        const diffDays = Math.floor(
+          (todayBase - d) / (1000 * 60 * 60 * 24)
+        );
+
+        if (diffDays < 0 || diffDays > 9) continue;
 
         const tr = document.createElement("tr");
         const tdDate = document.createElement("td");
         const tdAmount = document.createElement("td");
+        const tdButtons = document.createElement("td");
 
-        tdDate.textContent = e.date.replace(/-/g, "/");
+        tdDate.textContent = e.date;
+        tdAmount.textContent = e.amount;
+        tdAmount.className =
+          e.amount < 0 ? "amount-negative" : "amount-positive";
 
-        const cls = e.amount < 0 ? "amount-negative" : (e.amount > 0 ? "amount-positive" : "");
-        tdAmount.textContent = formatter.format(e.amount);
-        if (cls) tdAmount.classList.add(cls);
+        const btnEdit = document.createElement("button");
+        btnEdit.textContent = "編集";
+        btnEdit.className = "btn-edit";
+
+        const btnDel = document.createElement("button");
+        btnDel.textContent = "削除";
+        btnDel.className = "btn-del";
+
+        btnEdit.onclick = (ev) => {
+          const dateInput = document.getElementById("date-input");
+          const amountInput = document.getElementById("amount-input");
+          const form = document.getElementById("entry-form");
+
+          dateInput.value = e.date;
+          amountInput.value = e.amount;
+          editingId = e.id;
+
+          // 入力フォームへスクロール＆金額欄にフォーカス
+          form.scrollIntoView({ behavior: "smooth", block: "start" });
+          setTimeout(() => amountInput.focus(), 300);
+
+          showToast("編集モード", ev.target);
+        };
+
+        btnDel.onclick = () => {
+          let arr = loadEntries().filter((x) => x.id !== e.id);
+          saveEntries(arr);
+          render();
+          // 削除時のトーストは画面下中央固定（button を渡さない）
+          showToast("削除しました", null);
+        };
+
+        tdButtons.appendChild(btnEdit);
+        tdButtons.appendChild(btnDel);
 
         tr.appendChild(tdDate);
         tr.appendChild(tdAmount);
+        tr.appendChild(tdButtons);
         tbody.appendChild(tr);
         count++;
       }
@@ -318,166 +340,121 @@
       if (count === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 2;
-        td.textContent = "直近10日間のデータがない。上のフォームから登録する。";
+        td.colSpan = 3;
+        td.textContent = "直近10日間のデータがない。";
         tr.appendChild(td);
         tbody.appendChild(tr);
       }
     }
 
-    function renderWeeklySummary(entries, budget) {
+    function renderWeekly(entries, budget) {
+      const map = {};
+
+      for (const e of entries) {
+        const range = getWeekRange(e.date);
+        const key = formatDate(range.start);
+        if (!map[key]) {
+          map[key] = { start: range.start, end: range.end, total: 0 };
+        }
+        map[key].total += Number(e.amount);
+      }
+
       const tbody = document.querySelector("#weekly-table tbody");
       tbody.innerHTML = "";
 
-      const weekMap = new Map(); // key -> { label, start, total }
+      const weeks = Object.values(map).sort((a, b) => b.start - a.start);
 
-      for (const e of entries) {
-        const dateObj = parseDateFromInput(e.date);
-        const { key, label, start } = getWeekKey(dateObj);
-        if (!weekMap.has(key)) {
-          weekMap.set(key, { label, start, total: 0 });
-        }
-        const w = weekMap.get(key);
-        w.total += e.amount;
-      }
-
-      const weekArr = Array.from(weekMap.values());
-      weekArr.sort((a, b) => b.start - a.start); // 新しい週を上に
-
-      const thisWeekKey = getThisWeekKey();
-      const formatter = new Intl.NumberFormat("ja-JP", {
-        style: "currency",
-        currency: "JPY"
-      });
-
-      if (weekArr.length === 0) {
+      if (weeks.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
         td.colSpan = 5;
-        td.textContent = "まだデータがない。上のフォームから登録する。";
+        td.textContent = "まだデータがない。";
         tr.appendChild(td);
         tbody.appendChild(tr);
         return;
       }
 
-      for (const w of weekArr) {
+      for (const w of weeks) {
         const tr = document.createElement("tr");
+        const remain = budget ? budget - w.total : "-";
+        const rate = budget ? ((w.total / budget) * 100).toFixed(1) + "%" : "-";
 
-        const weekKeyForRow = getWeekKey(w.start).key;
-        if (weekKeyForRow === thisWeekKey) {
-          tr.classList.add("highlight-week");
-        }
-
-        const tdLabel = document.createElement("td");
-        const tdTotal = document.createElement("td");
-        const tdBudget = document.createElement("td");
-        const tdRemain = document.createElement("td");
-        const tdRate = document.createElement("td");
-
-        tdLabel.textContent = w.label;
-
-        tdTotal.textContent = formatter.format(w.total);
-        if (w.total < 0) tdTotal.classList.add("amount-negative");
-        if (w.total > 0) tdTotal.classList.add("amount-positive");
-
-        if (budget > 0) {
-          tdBudget.textContent = formatter.format(budget);
-
-          const remain = budget - w.total;
-          tdRemain.textContent = formatter.format(remain);
-          if (remain < 0) tdRemain.classList.add("amount-negative");
-          if (remain > 0) tdRemain.classList.add("amount-positive");
-
-          const rate = (w.total / budget) * 100;
-          tdRate.textContent = rate.toFixed(1) + " %";
-        } else {
-          tdBudget.textContent = "未設定";
-          tdRemain.textContent = "—";
-          tdRate.textContent = "—";
-        }
-
-        tr.appendChild(tdLabel);
-        tr.appendChild(tdTotal);
-        tr.appendChild(tdBudget);
-        tr.appendChild(tdRemain);
-        tr.appendChild(tdRate);
+        tr.innerHTML = `
+          <td>${formatDate(w.start)}〜${formatDate(w.end)}</td>
+          <td>${w.total}</td>
+          <td>${budget || "-"}</td>
+          <td>${remain}</td>
+          <td>${rate}</td>
+        `;
         tbody.appendChild(tr);
       }
     }
 
-    function refreshAll(entries, budget) {
-      renderEntries(entries);
-      renderWeeklySummary(entries, budget);
-    }
+    // 入力フォーム送信
+    document
+      .getElementById("entry-form")
+      .addEventListener("submit", (e) => {
+        e.preventDefault();
+        const dateInput = document.getElementById("date-input");
+        const amountInput = document.getElementById("amount-input");
+        const btn = e.submitter;
 
-    window.addEventListener("DOMContentLoaded", () => {
-      let entries = loadEntries();
-      let currentBudget = loadBudget();
+        const date = dateInput.value;
+        const amount = Number(amountInput.value);
+        if (!date || !Number.isFinite(amount)) return;
 
-      // フォーム初期値設定
-      const dateInput = document.getElementById("date-input");
+        let entries = loadEntries();
+
+        if (editingId) {
+          entries = entries.map((x) =>
+            x.id === editingId ? { ...x, date, amount } : x
+          );
+          editingId = null;
+          showToast("更新しました", btn);
+        } else {
+          entries.push({ id: Date.now(), date, amount });
+          showToast("登録しました", btn);
+        }
+
+        saveEntries(entries);
+        render();
+        e.target.reset();
+      });
+
+    // 予算フォーム送信
+    document
+      .getElementById("budget-form")
+      .addEventListener("submit", (e) => {
+        e.preventDefault();
+        const budgetInput = document.getElementById("budget-input");
+        const b = Number(budgetInput.value);
+        const btn = e.submitter;
+
+        if (!Number.isFinite(b) || b < 0) {
+          showToast("0以上の数字を入力", btn);
+          return;
+        }
+
+        saveBudget(b);
+        render();
+        showToast("保存しました", btn);
+      });
+
+    // 初期化
+    (function init() {
       const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = (today.getMonth() + 1).toString().padStart(2, "0");
-      const dd = today.getDate().toString().padStart(2, "0");
-      dateInput.value = `${yyyy}-${mm}-${dd}`;
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
+      document.getElementById("date-input").value = `${y}-${m}-${d}`;
 
-      const budgetInput = document.getElementById("budget-input");
-      if (currentBudget > 0) {
-        budgetInput.value = currentBudget;
-      } else {
-        budgetInput.value = "";
+      const budget = loadBudget();
+      if (budget > 0) {
+        document.getElementById("budget-input").value = budget;
       }
 
-      refreshAll(entries, currentBudget);
-
-      const form = document.getElementById("entry-form");
-      const amountInput = document.getElementById("amount-input");
-
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const dateStr = dateInput.value;
-        const amountStr = amountInput.value;
-
-        if (!dateStr) {
-          alert("日付を入力する。");
-          return;
-        }
-        const amount = Number(amountStr);
-        if (!Number.isFinite(amount)) {
-          alert("金額には数字を入力する。");
-          return;
-        }
-
-        entries = loadEntries();
-        const newEntry = {
-          id: Date.now(),
-          date: dateStr,
-          amount: amount
-        };
-        entries.push(newEntry);
-        saveEntries(entries);
-        refreshAll(entries, currentBudget);
-
-        amountInput.value = "";
-        amountInput.focus();
-      });
-
-      const budgetForm = document.getElementById("budget-form");
-      budgetForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const valStr = budgetInput.value;
-        const b = Number(valStr);
-        if (!Number.isFinite(b) || b < 0) {
-          alert("週予算には0以上の数字を入力する。");
-          return;
-        }
-        currentBudget = b;
-        saveBudget(currentBudget);
-        entries = loadEntries();
-        refreshAll(entries, currentBudget);
-      });
-    });
+      render();
+    })();
   </script>
 </body>
 </html>
